@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  Admin
+  User
+}
+
+enum Status {
+  Pending
+  InProgress
+  Done
+  Canceled
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(User)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Settings {
+  id                String   @id @default(uuid())
+  shippingPrice     Int?     @unique @default(0)
+  freeShippingPrice Int?     @unique @default(0)
+  freeShipDescEn    String?
+  freeShipDescAr    String?
+  address           String?
+  airPlaneMode      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("settings")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  nameEn    String
+  nameAr    String
+  imageUrl  String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Seo {
+  id         String   @id @default(uuid())
+  page       String
+  titleEn    String
+  titleAr    String
+  descEn     String
+  descAr     String
+  keywordsEn String[] @default([])
+  keywordsAr String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("seo")
+}
+
+model Landing {
+  id          String   @id @default(uuid())
+  titleEn     String
+  titleAr     String
+  image       String
+  descEn      String
+  descAr      String
+  link        String
+  linkTitleEn String
+  linkTitleAr String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("landing")
+}
+
+model CatalogSize {
+  id        String   @id @default(uuid())
+  valueSize String
+  labelEn   String?
+  labelAr   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productSizes ProductSize[]
+
+  @@index([valueSize])
+  @@map("catalog_sizes")
+}
+
+model CatalogColor {
+  id        String   @id @default(uuid())
+  hex       String
+  nameEn    String?
+  nameAr    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productSizeColors ProductSizeColor[]
+
+  @@index([hex])
+  @@map("catalog_colors")
+}
+
+model Product {
+  id             String         @id @default(uuid())
+  name           String
+  categoryId     String
+  category       Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  price          Decimal        @db.Decimal(10, 2)
+  estimatedPrice Decimal?       @db.Decimal(10, 2)
+  sku            String?        @unique
+  publicPro      Boolean        @default(true)
+  soldOut        Boolean        @default(false)
+  descriptionEn  String?
+  descriptionAr  String?
+  keywordsEn     String[]       @default([])
+  keywordsAr     String[]       @default([])
+  images         ProductImage[]
+  sizes          ProductSize[]
+  purchased      Int?           @default(0)
+  orderItems     OrderItem[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([categoryId])
+  @@index([price])
+  @@map("products")
+}
+
+model ProductImage {
+  id             String   @id @default(uuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url            String
+  filename       String
+  isMain         Boolean  @default(false)
+  linkedColorHex String?
+  sortOrder      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([productId])
+  @@index([productId, isMain])
+  @@map("product_images")
+}
+
+model ProductSize {
+  id            String             @id @default(uuid())
+  productId     String
+  product       Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sizeValue     String             @map("size_value")
+  catalogSizeId String?
+  catalogSize   CatalogSize?       @relation(fields: [catalogSizeId], references: [id], onDelete: SetNull)
+  soldout       Boolean            @default(false)
+  colors        ProductSizeColor[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([productId])
+  @@map("product_sizes")
+}
+
+model ProductSizeColor {
+  id             String        @id @default(uuid())
+  sizeId         String
+  size           ProductSize   @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+  hex            String
+  catalogColorId String?
+  catalogColor   CatalogColor? @relation(fields: [catalogColorId], references: [id], onDelete: SetNull)
+  nameEn         String?
+  nameAr         String?
+  soldout        Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([sizeId])
+  @@map("product_size_colors")
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  fullName        String
+  email           String
+  phone_number    String
+  secPhone_number String?
+  governorate     String
+  secGovernorate  String?
+  city            String
+  secCity         String?
+  address         String
+  secAddress      String?
+  note            String?
+  status          Status   @default(Pending)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  name      String
+  img       String
+  price     Int
+  color     String?
+  size      String?
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  message   String
+  status    Boolean  @default(false)
+  theId     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@map("notifications")
+}
