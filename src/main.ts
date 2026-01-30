@@ -9,42 +9,53 @@ import * as graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.js';
 import * as bodyParser from 'body-parser';
 import * as compression from 'compression';
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : [];
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.enableCors({
-    origin: [
-      process.env.CLIENT_SIDE_DASHBOARD_URI,
-      process.env.CLIENT_SIDE_DASHBOARD_URI_WWW,
-      process.env.CLIENT_SIDE_URI,
-      process.env.CLIENT_SIDE_URI_WWW,
-    ],
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Accept',
       'Authorization',
       'Content-Type',
       'X-Requested-With',
-      'apollo-require-preflight',
+      'Apollo-Require-Preflight',
       'accesstoken',
       'refreshtoken',
     ],
-    methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
   });
 
   app.use(cookieParser());
 
   app.use(
     graphqlUploadExpress({
-      maxFileSize: 10000000000,
+      maxFileSize: MAX_FILE_SIZE,
       maxFiles: 10,
-      maxFieldSize: 10000000,
     }),
   );
-  app.useGlobalPipes(new ValidationPipe());
 
   app.use(bodyParser.json({ limit: '50mb' }));
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
+  app.useGlobalPipes(new ValidationPipe());
 
   app.useStaticAssets(join(__dirname, '../..', 'public'));
 

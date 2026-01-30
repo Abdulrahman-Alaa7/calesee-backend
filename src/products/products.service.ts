@@ -525,9 +525,7 @@ export class ProductsService {
       where: {
         publicPro: true,
       },
-      orderBy: {
-        purchased: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
       take: 4,
       include: {
         category: true,

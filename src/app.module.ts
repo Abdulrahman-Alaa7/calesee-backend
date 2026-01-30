@@ -21,6 +21,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { NotificationModule } from './notification/notification.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { OrderGateway } from './order/order.gateway';
+import { FeedModule } from './feed/feed.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { OrderGateway } from './order/order.gateway';
     OrderModule,
     AnalyticsModule,
     NotificationModule,
+    FeedModule,
   ],
   controllers: [],
   providers: [
