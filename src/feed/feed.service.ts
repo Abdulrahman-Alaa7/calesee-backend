@@ -34,7 +34,7 @@ export class FeedService {
           '';
 
         const finalPrice =
-          product.estimatedPrice && product.estimatedPrice > product.price
+          product.estimatedPrice && product.estimatedPrice > 0
             ? product.estimatedPrice
             : product.price;
 
