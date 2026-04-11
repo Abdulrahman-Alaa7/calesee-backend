@@ -54,9 +54,10 @@ export class CreateOrderInput {
   @MinLength(3)
   fullName: string;
 
-  @Field()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @Field()
   @IsString()

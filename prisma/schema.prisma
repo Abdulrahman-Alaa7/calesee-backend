@@ -197,7 +197,7 @@ model ProductSizeColor {
 model Order {
   id              String   @id @default(uuid())
   fullName        String
-  email           String
+  email           String?
   phone_number    String
   secPhone_number String?
   governorate     String

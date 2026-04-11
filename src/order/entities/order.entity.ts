@@ -12,7 +12,7 @@ export class Order {
   @Field()
   fullName: string;
 
-  @Field()
+  @Field({ nullable: true })
   email: string;
 
   @Field()

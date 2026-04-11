@@ -287,39 +287,40 @@ export class OrderService implements OnModuleInit {
       theId: order.id,
     });
 
-    try {
-      await this.emailService.sendMail({
-        subject:
-          lang === 'ar'
-            ? 'تأكيد طلبك من Calesee'
-            : 'Your Calesee order confirmation',
-        email,
-        name: fullName,
-        activationCode: fullName,
-        template:
-          lang === 'ar'
-            ? './order-confirmation-ar.ejs'
-            : './order-confirmation.ejs',
-        order: {
-          id: order.id.toString().slice(0, 6),
-          date: order.createdAt.toISOString(),
-          theShippingPrice: shippingCost,
-          products: order.items.map((it) => ({
-            name: it.name,
-            quantity: it.quantity,
-            price: it.price,
-          })),
-          totalPrice,
-        },
-      });
-    } catch (e) {
-      console.log('MAIL ERROR =====>', e);
-      this.logger.error(
-        `Failed to send order confirmation email for order ${order.id}`,
-        e instanceof Error ? e.stack : (e as any),
-      );
+    if (input.email && input.email.trim() !== '') {
+      try {
+        await this.emailService.sendMail({
+          subject:
+            lang === 'ar'
+              ? 'تأكيد طلبك من Calesee'
+              : 'Your Calesee order confirmation',
+          email,
+          name: fullName,
+          activationCode: fullName,
+          template:
+            lang === 'ar'
+              ? './order-confirmation-ar.ejs'
+              : './order-confirmation.ejs',
+          order: {
+            id: order.id.toString().slice(0, 6),
+            date: order.createdAt.toISOString(),
+            theShippingPrice: shippingCost,
+            products: order.items.map((it) => ({
+              name: it.name,
+              quantity: it.quantity,
+              price: it.price,
+            })),
+            totalPrice,
+          },
+        });
+      } catch (e) {
+        console.log('MAIL ERROR =====>', e);
+        this.logger.error(
+          `Failed to send order confirmation email for order ${order.id}`,
+          e instanceof Error ? e.stack : (e as any),
+        );
+      }
     }
-
     return {
       order,
     };
