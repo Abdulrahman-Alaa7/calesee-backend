@@ -19,6 +19,12 @@ enum Status {
   Canceled
 }
 
+enum ReviewStatus {
+  Pending
+  Approved
+  Rejected
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -33,18 +39,29 @@ model User {
 }
 
 model Settings {
-  id                String   @id @default(uuid())
-  shippingPrice     Int?     @unique @default(0)
-  freeShippingPrice Int?     @unique @default(0)
-  freeShipDescEn    String?
-  freeShipDescAr    String?
-  address           String?
-  airPlaneMode      Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  defaultShippingPrice Int      @default(0)
+  freeShippingPrice    Int?     @unique @default(0)
+  freeShipDescEn       String?
+  freeShipDescAr       String?
+  address              String?
+  airPlaneMode         Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([createdAt])
   @@map("settings")
+}
+
+model ShippingZone {
+  id          String   @id @default(uuid())
+  governorate String   @unique
+  price       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([governorate])
+  @@map("shipping_zones")
 }
 
 model Category {
@@ -136,6 +153,7 @@ model Product {
   sizes          ProductSize[]
   purchased      Int?           @default(0)
   orderItems     OrderItem[]
+  reviews        Review[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -201,9 +219,7 @@ model Order {
   phone_number    String
   secPhone_number String?
   governorate     String
-  secGovernorate  String?
   city            String
-  secCity         String?
   address         String
   secAddress      String?
   note            String?
@@ -235,6 +251,28 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+model Review {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name    String
+  comment String
+  rating  Int
+
+  imageUrl  String?
+  imageName String?
+
+  status ReviewStatus @default(Pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([status])
+  @@map("reviews")
 }
 
 model Notification {
