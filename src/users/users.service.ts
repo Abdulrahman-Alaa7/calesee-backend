@@ -4,12 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService, JwtVerifyOptions } from '@nestjs/jwt';
+// import { JwtService, JwtVerifyOptions } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import {
-  ActivationDto,
+  // ActivationDto,
   ForgotPasswordDto,
   LoginDto,
-  RegisterDto,
+  // RegisterDto,
   ResetPasswordDto,
   UpdatePasswordDto,
 } from './dto/user.dto';
@@ -28,97 +29,97 @@ export class UsersService {
     private readonly emailService: EmailService,
   ) {}
 
-  async register(registerDto: RegisterDto, response: Response) {
-    const { name, email, password, role } = registerDto;
+  // async register(registerDto: RegisterDto, response: Response) {
+  //   const { name, email, password, role } = registerDto;
 
-    const isEmailExist = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
-    if (isEmailExist) {
-      throw new BadRequestException('User already exist with this email!');
-    }
+  //   const isEmailExist = await this.prisma.user.findUnique({
+  //     where: {
+  //       email,
+  //     },
+  //   });
+  //   if (isEmailExist) {
+  //     throw new BadRequestException('User already exist with this email!');
+  //   }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  //   const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user: any = {
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    };
+  //   const user: any = {
+  //     name,
+  //     email,
+  //     password: hashedPassword,
+  //     role,
+  //   };
 
-    const activationToken = await this.createActivationToken(user);
+  //   const activationToken = await this.createActivationToken(user);
 
-    const activationCode = activationToken.activationCode;
+  //   const activationCode = activationToken.activationCode;
 
-    const activation_token = activationToken.token;
+  //   const activation_token = activationToken.token;
 
-    await this.emailService.sendMail({
-      email,
-      subject: 'Activate your account!',
-      template: './activation-mail',
-      name,
-      activationCode,
-    });
+  //   await this.emailService.sendMail({
+  //     email,
+  //     subject: 'Activate your account!',
+  //     template: './activation-mail',
+  //     name,
+  //     activationCode,
+  //   });
 
-    return { activation_token, response };
-  }
+  //   return { activation_token, response };
+  // }
 
-  async createActivationToken(user: User) {
-    const activationCode = Math.floor(
-      100000 + Math.random() * 900000,
-    ).toString();
+  // async createActivationToken(user: User) {
+  //   const activationCode = Math.floor(
+  //     100000 + Math.random() * 900000,
+  //   ).toString();
 
-    const token = this.jwtService.sign(
-      {
-        user,
-        activationCode,
-      },
-      {
-        secret: this.configService.get<string>('ACTIVATION_SECRET'),
-        expiresIn: '5m',
-      },
-    );
-    return { token, activationCode };
-  }
+  //   const token = this.jwtService.sign(
+  //     {
+  //       user,
+  //       activationCode,
+  //     },
+  //     {
+  //       secret: this.configService.get<string>('ACTIVATION_SECRET'),
+  //       expiresIn: '5m',
+  //     },
+  //   );
+  //   return { token, activationCode };
+  // }
 
-  async activateUser(activationDto: ActivationDto, response: Response) {
-    const { activationToken, activationCode } = activationDto;
+  // async activateUser(activationDto: ActivationDto, response: Response) {
+  //   const { activationToken, activationCode } = activationDto;
 
-    const newUser: { user: User; activationCode: string } =
-      this.jwtService.verify(activationToken, {
-        secret: this.configService.get<string>('ACTIVATION_SECRET'),
-      } as JwtVerifyOptions) as { user: User; activationCode: string };
+  //   const newUser: { user: User; activationCode: string } =
+  //     this.jwtService.verify(activationToken, {
+  //       secret: this.configService.get<string>('ACTIVATION_SECRET'),
+  //     } as JwtVerifyOptions) as { user: User; activationCode: string };
 
-    if (newUser.activationCode !== activationCode) {
-      throw new BadRequestException('Invalid activation code');
-    }
+  //   if (newUser.activationCode !== activationCode) {
+  //     throw new BadRequestException('Invalid activation code');
+  //   }
 
-    const { name, email, password, role } = newUser.user;
+  //   const { name, email, password, role } = newUser.user;
 
-    const existUser = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+  //   const existUser = await this.prisma.user.findUnique({
+  //     where: {
+  //       email,
+  //     },
+  //   });
 
-    if (existUser) {
-      throw new BadRequestException('User already exist with this email!');
-    }
+  //   if (existUser) {
+  //     throw new BadRequestException('User already exist with this email!');
+  //   }
 
-    const user = await this.prisma.user.create({
-      data: {
-        name,
-        email,
-        password,
-        role,
-      },
-    });
+  //   const user = await this.prisma.user.create({
+  //     data: {
+  //       name,
+  //       email,
+  //       password,
+  //       role,
+  //     },
+  //   });
 
-    return { user, response };
-  }
+  //   return { user, response };
+  // }
 
   async Login(loginDto: LoginDto) {
     const { email, password } = loginDto;

@@ -203,12 +203,15 @@ export class OrderService implements OnModuleInit {
         }
       }
 
-      const currentPrice =
-        Number(product.estimatedPrice) > 0
-          ? Number(product.estimatedPrice)
-          : Number(product.price);
+      const estimated = product.estimatedPrice
+        ? product.estimatedPrice.toNumber()
+        : 0;
 
-      if (currentPrice !== Number(item.price)) {
+      const basePrice = product.price.toNumber();
+
+      const currentPrice = estimated > 0 ? estimated : basePrice;
+
+      if (Math.abs(currentPrice - Number(item.price)) > 0.01) {
         throw new BadRequestException(
           this.getMsg(lang, 'PRICE_CHANGED', {
             name: product.name,
@@ -217,7 +220,9 @@ export class OrderService implements OnModuleInit {
         );
       }
 
-      subtotal += currentPrice * item.quantity;
+      const qty = Number(item.quantity) || 0;
+
+      subtotal += currentPrice * qty;
 
       orderItemsData.push({
         productId: product.id,
@@ -234,13 +239,18 @@ export class OrderService implements OnModuleInit {
     const shippingZone = await this.prisma.shippingZone.findUnique({
       where: { governorate },
     });
-    const shippingPrice = shippingZone
+    const rawShippingPrice = shippingZone
       ? shippingZone.price
-      : (settings?.defaultShippingPrice ?? 0);
+      : settings?.defaultShippingPrice;
+
+    const shippingPrice = Number(rawShippingPrice) || 0;
+
     const freeShippingPrice = settings?.freeShippingPrice ?? null;
 
     const shippingCost =
-      freeShippingPrice && subtotal >= freeShippingPrice ? 0 : shippingPrice;
+      freeShippingPrice !== null && subtotal >= freeShippingPrice
+        ? 0
+        : shippingPrice;
 
     const totalPrice = subtotal + shippingCost;
 
@@ -252,6 +262,8 @@ export class OrderService implements OnModuleInit {
           phone_number,
           secPhone_number,
           governorate,
+          shippingPrice: shippingCost,
+          totalPrice: totalPrice,
           city,
           address,
           secAddress,
@@ -310,7 +322,7 @@ export class OrderService implements OnModuleInit {
             products: order.items.map((it) => ({
               name: it.name,
               quantity: it.quantity,
-              price: it.price,
+              price: Number(it.price),
             })),
             totalPrice,
           },
@@ -324,15 +336,51 @@ export class OrderService implements OnModuleInit {
       }
     }
     return {
-      order,
+      order: {
+        ...order,
+        totalPrice,
+        shippingPrice: order.shippingPrice.toNumber(),
+        items: order.items.map((item) => ({
+          ...item,
+          price: Number(item.price),
+        })),
+      },
     };
   }
 
+  private calculateOrderTotal(order: any, settings: any) {
+    const subtotal = order.items.reduce(
+      (acc: number, item: any) =>
+        acc + Number(item.price) * Number(item.quantity),
+      0,
+    );
+
+    const shippingPrice = Number(settings?.defaultShippingPrice) || 0;
+    const freeShippingPrice = settings?.freeShippingPrice ?? null;
+
+    const shippingCost =
+      freeShippingPrice !== null && subtotal >= freeShippingPrice
+        ? 0
+        : shippingPrice;
+
+    return subtotal + shippingCost;
+  }
+
   async getOrders() {
-    return await this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
+
+    return orders.map((order) => ({
+      ...order,
+      totalPrice: order.totalPrice.toNumber(),
+      shippingPrice: order.shippingPrice.toNumber(),
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+      })),
+    }));
   }
 
   async getOrderById(id: string) {
@@ -345,7 +393,15 @@ export class OrderService implements OnModuleInit {
       throw new BadRequestException(this.getMsg('en', 'ORDER_NOT_FOUND'));
     }
 
-    return order;
+    return {
+      ...order,
+      totalPrice: order.totalPrice.toNumber(),
+      shippingPrice: order.shippingPrice.toNumber(),
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+      })),
+    };
   }
 
   async updateOrderStatus(input: UpdateOrderStatusInput) {
@@ -359,11 +415,21 @@ export class OrderService implements OnModuleInit {
       throw new BadRequestException(this.getMsg('en', 'ORDER_NOT_FOUND'));
     }
 
-    return await this.prisma.order.update({
+    const order = await this.prisma.order.update({
       where: { id },
       data: { status },
       include: { items: true },
     });
+
+    return {
+      ...order,
+      totalPrice: order.totalPrice.toNumber(),
+      shippingPrice: order.shippingPrice.toNumber(),
+      items: order.items.map((item) => ({
+        ...item,
+        price: Number(item.price),
+      })),
+    };
   }
 
   async deleteOrder(id: string) {
@@ -400,7 +466,15 @@ export class OrderService implements OnModuleInit {
     });
 
     return {
-      recentOrders,
+      recentOrders: recentOrders.map((order) => ({
+        ...order,
+        totalPrice: order.totalPrice.toNumber(),
+        shippingPrice: order.shippingPrice.toNumber(),
+        items: order.items.map((item) => ({
+          ...item,
+          price: Number(item.price),
+        })),
+      })),
       ordersThisMonthCount,
     };
   }

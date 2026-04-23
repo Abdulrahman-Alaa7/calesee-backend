@@ -43,6 +43,12 @@ export class Order {
   items: OrderItem[];
 
   @Field()
+  totalPrice: number;
+
+  @Field()
+  shippingPrice: number;
+
+  @Field()
   createdAt: Date;
 
   @Field()

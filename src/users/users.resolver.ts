@@ -1,18 +1,19 @@
-import { BadRequestException, UseGuards } from '@nestjs/common';
+// import { BadRequestException, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
-  ActivationResponse,
+  // ActivationResponse,
   ForgotPasswordResponse,
   LoginResponse,
   LogoutResponse,
-  RegisterResponse,
+  // RegisterResponse,
   ResetPasswordResponse,
   UpdatePasswordResponse,
 } from '../types/user.types';
 import {
-  ActivationDto,
+  // ActivationDto,
   ForgotPasswordDto,
-  RegisterDto,
+  // RegisterDto,
   ResetPasswordDto,
   UpdatePasswordDto,
 } from './dto/user.dto';
@@ -22,36 +23,43 @@ import { User } from './entities/user.entity';
 import { Roles } from '../decorator/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: true, // لازم عشان HTTPS
+  sameSite: 'none' as const, // 👈 أهم حاجة
+  path: '/',
+};
+
 @Resolver('User')
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
-  @Mutation(() => RegisterResponse)
-  // @UseGuards(AuthGuard)
-  async register(
-    @Args('registerDto') registerDto: RegisterDto,
-    @Context() context: { res: Response },
-  ): Promise<RegisterResponse> {
-    if (!registerDto.name || !registerDto.email || !registerDto.password) {
-      throw new BadRequestException('Please fill the all fields');
-    }
+  // @Mutation(() => RegisterResponse)
+  // // @UseGuards(AuthGuard)
+  // async register(
+  //   @Args('registerDto') registerDto: RegisterDto,
+  //   @Context() context: { res: Response },
+  // ): Promise<RegisterResponse> {
+  //   if (!registerDto.name || !registerDto.email || !registerDto.password) {
+  //     throw new BadRequestException('Please fill the all fields');
+  //   }
 
-    const { activation_token } = await this.usersService.register(
-      registerDto,
-      context.res,
-    );
+  //   const { activation_token } = await this.usersService.register(
+  //     registerDto,
+  //     context.res,
+  //   );
 
-    return { activation_token };
-  }
+  //   return { activation_token };
+  // }
 
-  @Mutation(() => ActivationResponse)
-  // @UseGuards(AuthGuard)
-  async activateUser(
-    @Args('activationDto') activationDto: ActivationDto,
-    @Context() context: { res: Response },
-  ): Promise<ActivationResponse> {
-    return await this.usersService.activateUser(activationDto, context.res);
-  }
+  // @Mutation(() => ActivationResponse)
+  // // @UseGuards(AuthGuard)
+  // async activateUser(
+  //   @Args('activationDto') activationDto: ActivationDto,
+  //   @Context() context: { res: Response },
+  // ): Promise<ActivationResponse> {
+  //   return await this.usersService.activateUser(activationDto, context.res);
+  // }
 
   @Mutation(() => LoginResponse)
   async Login(
@@ -67,16 +75,12 @@ export class UsersResolver {
 
     if (context.res) {
       context.res.cookie('access_token', result.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        ...cookieOptions,
         maxAge: 15 * 60 * 1000,
       });
 
       context.res.cookie('refresh_token', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        ...cookieOptions,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
     }
@@ -104,16 +108,12 @@ export class UsersResolver {
 
     if (context.res) {
       context.res.cookie('access_token', result.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        ...cookieOptions,
         maxAge: 5 * 60 * 1000,
       });
 
       context.res.cookie('refresh_token', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        ...cookieOptions,
         maxAge: 3 * 24 * 60 * 60 * 1000,
       });
     }
@@ -152,8 +152,8 @@ export class UsersResolver {
     const result = await this.usersService.Logout();
 
     if (context.res) {
-      context.res.clearCookie('access_token');
-      context.res.clearCookie('refresh_token');
+      context.res.clearCookie('access_token', cookieOptions);
+      context.res.clearCookie('refresh_token', cookieOptions);
     } else {
       console.warn('Response object is not available in context');
     }
